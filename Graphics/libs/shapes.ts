@@ -83,42 +83,62 @@ function shapeF_centered() : twgl.Arrays {
 }
 
 function smiley(radius: number) : twgl.Arrays {
-    // The arrays are initially empty
     const positionData: number[] = [];
     const colorData: number[] = [];
     const indexData: number[] = [];
 
-    // TODO: Create you own shape for a smiley face
-    //  - Add coordinates as pairs of elements into the positionData array
-    //  - Add color values as 3 values (RBG) into the colorData array
-    //  - Add index for the order in which vertices are connected, 3 values for each triangle
-    // HINT: You can use polar coordinates to define the positions of vertices,
-    // using the radius and an angle. Then convert them to polar coordinates.
+    // Circle made of triangles (fan): one vertex at the center and N on the edge
+    function addFan(cx: number, cy: number, r: number,
+                    centerColor: number[], edgeColor: number[], segments = 32) {
+        const start = positionData.length / 2;
+        positionData.push(cx, cy);
+        colorData.push(...centerColor);
+        for (let i = 0; i < segments; i++) {
+            const angle = (2 * Math.PI * i) / segments;
+            positionData.push(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+            colorData.push(...edgeColor);
+        }
+        for (let i = 0; i < segments; i++) {
+            indexData.push(start, start + 1 + i, start + 1 + ((i + 1) % segments));
+        }
+    }
 
-    // Sample data for a single yellow triangle. Replace with your values.
-    positionData.push(0, 100);
-    positionData.push(-120, -100);
-    positionData.push(120, -100);
-    colorData.push(0.9, 0.8, 0, 1);
-    colorData.push(0.9, 0.8, 0, 1);
-    colorData.push(0.9, 0.8, 0, 1);
+    // Mouth: strip of triangles between two arcs (inner and outer radius)
+    function addArc(rIn: number, rOut: number, a0: number, a1: number,
+                    color: number[], segments = 16) {
+        const start = positionData.length / 2;
+        for (let i = 0; i <= segments; i++) {
+            const angle = a0 + (a1 - a0) * (i / segments);
+            const c = Math.cos(angle), s = Math.sin(angle);
+            positionData.push(rIn * c, rIn * s, rOut * c, rOut * s);
+            colorData.push(...color, ...color);
+        }
+        for (let i = 0; i < segments; i++) {
+            const k = start + 2 * i;
+            indexData.push(k, k + 1, k + 2,   k + 1, k + 3, k + 2);
+        }
+    }
 
-    indexData.push(0, 2, 1);
+    const black = [0.1, 0.1, 0.1, 1];
 
+    // Face: yellow at the center, orange at the edge
+    addFan(0, 0, radius, [1.0, 0.9, 0.1, 1], [1.0, 0.65, 0.0, 1]);
+    // Eyes (positive y puts them at the top)
+    addFan(-radius * 0.35, radius * 0.3, radius * 0.12, black, black, 16);
+    addFan( radius * 0.35, radius * 0.3, radius * 0.12, black, black, 16);
+    // Nose (a single triangle)
+    const n = positionData.length / 2;
+    positionData.push(0, -radius * 0.1,  -radius * 0.08, radius * 0.1,  radius * 0.08, radius * 0.1);
+    colorData.push(0.8, 0.4, 0.1, 1,  0.8, 0.4, 0.1, 1,  0.8, 0.4, 0.1, 1);
+    indexData.push(n, n + 1, n + 2);
+    // Mouth (negative angles put the arc at the bottom)
+    addArc(radius * 0.45, radius * 0.58, -Math.PI * 0.88, -Math.PI * 0.12, black);
 
-
-
-
-    // Build the final object with the arrays for positions, colors, and indices
-    const arrays: twgl.Arrays = {
+    return {
         a_position: { numComponents: 2, data: positionData },
         a_color:    { numComponents: 4, data: colorData },
         indices:    { numComponents: 3, data: indexData },
     };
-
-    console.log(arrays);
-
-    return arrays;
 }
 
 function diamond(size: number) : twgl.Arrays {

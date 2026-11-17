@@ -1,0 +1,4 @@
+# CG_1 - 2D face with transformations
+
+To run: from the `Graphics` folder, run `npx vite`
+and open `http://localhost:5173/CG_1/index.html`.
